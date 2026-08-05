@@ -4,6 +4,8 @@ import "./globals.css";
 
 import { ConvexClientProvider } from "@/providers/convex-client-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/sonner";
+import { ModalProvider } from "@/providers/modal-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,7 +27,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         <TooltipProvider delay={100}>
-          <ConvexClientProvider>{children}</ConvexClientProvider>
+          <ConvexClientProvider>
+            <Toaster />
+
+            <ModalProvider />
+
+            {children}
+          </ConvexClientProvider>
         </TooltipProvider>
       </body>
     </html>

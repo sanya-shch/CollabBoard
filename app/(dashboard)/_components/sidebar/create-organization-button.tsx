@@ -9,7 +9,7 @@ export function CreateOrganizationButton() {
       <DialogTrigger>
         <div className="aspect-square">
           <Hint label="Create organization" side="right" align="start" sideOffset={18}>
-            <div className="bg-white/25 h-full w-full rounded-md flex items-center justify-center opacity-60 hover:opacity-100 transition">
+            <div className="bg-white/25 h-full w-full rounded-md flex items-center justify-center opacity-60 hover:opacity-100 transition cursor-pointer">
               <Plus className="text-white" aria-label="Create Organization" />
             </div>
           </Hint>

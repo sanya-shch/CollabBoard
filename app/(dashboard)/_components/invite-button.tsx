@@ -9,12 +9,12 @@ export const InviteButton = () => {
     <Dialog>
       <DialogTrigger
         render={
-          <Button variant="outline">
+          <Button variant="outline" className="cursor-pointer">
             <Plus className="h-4 w-4" />
             Invite members
           </Button>
         }
-      ></DialogTrigger>
+      />
       <DialogContent className="p-0 bg-transparent border-none max-w-[880px]">
         <OrganizationProfile />
       </DialogContent>
