@@ -35,7 +35,7 @@ export const NewBoardButton = ({ orgId, disabled }: NewBoardButtonProps) => {
       disabled={pending || disabled}
       onClick={onClick}
       className={cn(
-        "col-span-1 aspect-[100/127] bg-sky-600 rounded-lg hover:bg-sky-800 flex flex-col items-center justify-center py-6",
+        "col-span-1 aspect-[100/127] bg-sky-600 rounded-lg hover:bg-sky-800 flex flex-col items-center justify-center py-6 cursor-pointer",
         (pending || disabled) && "opacity-75 hover:bg-sky-600 cursor-not-allowed",
       )}
     >
