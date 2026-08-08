@@ -1,44 +1,26 @@
-"use client";
-
-import { UserButton, OrganizationSwitcher, useOrganization } from "@clerk/nextjs";
+import { Organization } from "@/generated/prisma/client";
+import { requireAuth } from "@/lib/current-user";
 
 import { SearchInput } from "./search-input";
 import { InviteButton } from "./invite-button";
+import { UserMenu } from "./user-menu";
 
-export const Navbar = () => {
-  const { organization } = useOrganization();
+interface NavbarProps {
+  organization: Organization;
+}
+
+export const Navbar = async ({ organization }: NavbarProps) => {
+  const user = await requireAuth();
 
   return (
     <div className="flex items-center gap-x-4 p-5">
       <div className="hidden lg:flex lg:flex-1">
         <SearchInput />
       </div>
-      <div className="block lg:hidden flex-1">
-        <OrganizationSwitcher
-          hidePersonal
-          appearance={{
-            elements: {
-              rootBox: {
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                width: "100%",
-                maxWidth: "376px",
-              },
-              organizationSwitcherTrigger: {
-                padding: "6px",
-                width: "100%",
-                borderRadius: "8px",
-                border: "1px solid #E5E7EB",
-                justifyContent: "space-between",
-                backgroundColor: "white",
-              },
-            },
-          }}
-        />
-      </div>
-      {organization && <InviteButton />}
-      <UserButton />
+
+      <InviteButton organizationId={organization.id} />
+
+      <UserMenu name={user.name} email={user.email} image={user.image} />
     </div>
   );
 };

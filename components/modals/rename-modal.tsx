@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEventHandler, useEffect, useState } from "react";
+import { FormEventHandler, useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import {
@@ -15,11 +16,11 @@ import {
 import { useRenameModal } from "@/store/use-rename-modal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useApiMutation } from "@/hooks/use-api-mutation";
-import { api } from "@/convex/_generated/api";
+import { updateBoardTitle } from "@/actions/board";
 
 export const RenameModal = () => {
-  const { mutate, pending } = useApiMutation(api.board.update);
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
 
   const { isOpen, onClose, initialValues } = useRenameModal();
 
@@ -35,15 +36,19 @@ export const RenameModal = () => {
   const onSubmit: FormEventHandler<HTMLFormElement> = (e) => {
     e.preventDefault();
 
-    mutate({
-      id: initialValues.id,
-      title,
-    })
-      .then(() => {
-        toast.success("Board renamed");
-        onClose();
-      })
-      .catch(() => toast.error("Failed to rename board"));
+    startTransition(async () => {
+      const result = await updateBoardTitle(initialValues.id, title);
+
+      if (result?.error) {
+        toast.error(result.error);
+        return;
+      }
+
+      toast.success("Board renamed");
+      onClose();
+
+      router.refresh();
+    });
   };
 
   return (

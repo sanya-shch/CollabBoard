@@ -47,10 +47,13 @@ import { Path } from "./path";
 const MAX_LAYERS = 100;
 
 interface CanvasProps {
-  boardId: string;
+  board: {
+    id: string;
+    title: string;
+  };
 }
 
-export const Canvas = ({ boardId }: CanvasProps) => {
+export const Canvas = ({ board }: CanvasProps) => {
   const [canvasState, setCanvasState] = useState<CanvasState>({
     mode: CanvasMode.None,
   });
@@ -392,7 +395,7 @@ export const Canvas = ({ boardId }: CanvasProps) => {
 
   return (
     <main className="h-full w-full relative bg-neutral-100 touch-none">
-      <Info boardId={boardId} />
+      <Info board={board} />
 
       <Participants />
 

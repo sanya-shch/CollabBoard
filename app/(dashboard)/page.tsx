@@ -1,10 +1,6 @@
-"use client";
+import { getActiveOrganization } from "@/lib/active-org";
 
-import { useOrganization } from "@clerk/nextjs";
-
-import { EmptyOrg } from "./_components/empty-org";
 import { BoardList } from "./_components/board-list";
-import { use } from "react";
 
 interface DashboardPageProps {
   searchParams: Promise<{
@@ -13,13 +9,16 @@ interface DashboardPageProps {
   }>;
 }
 
-const DashboardPage = ({ searchParams }: DashboardPageProps) => {
-  const query = use(searchParams);
-  const { organization } = useOrganization();
+const DashboardPage = async ({ searchParams }: DashboardPageProps) => {
+  const organization = await getActiveOrganization();
+
+  if (!organization) return null;
+
+  const query = await searchParams;
 
   return (
-    <div className="flex-1 h-[calc(100%-72px)] p-6">
-      {!organization ? <EmptyOrg /> : <BoardList orgId={organization.id} query={query} />}
+    <div className="flex-1 h-[calc(100%-80px)] p-6">
+      <BoardList organizationId={organization.id} query={query} />
     </div>
   );
 };

@@ -1,43 +1,39 @@
 "use client";
 
-import { toast } from "sonner";
-import { useOrganization } from "@clerk/nextjs";
+import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-
-import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
-import { useApiMutation } from "@/hooks/use-api-mutation";
+import { createBoard } from "@/actions/board";
 
-export const EmptyBoards = () => {
+interface EmptyBoardsProps {
+  organizationId: string;
+}
+
+export const EmptyBoards = ({ organizationId }: EmptyBoardsProps) => {
   const router = useRouter();
-  const { organization } = useOrganization();
-  const { mutate, pending } = useApiMutation(api.board.create);
+  const [isPending, startTransition] = useTransition();
 
   const onClick = () => {
-    if (!organization) return;
+    startTransition(async () => {
+      const result = await createBoard({
+        organizationId,
+        title: "Untitled",
+        imageUrl: "file.svg",
+      });
 
-    mutate({
-      orgId: organization.id,
-      title: "Untitled",
-    })
-      .then((id) => {
-        toast.success("Board created");
-
-        router.push(`/board/${id}`);
-      })
-      .catch(() => toast.error("Failed to create board"));
+      if ("board" in result) router.push(`/board/${result.board!.id}`);
+    });
   };
+
   return (
     <div className="h-full flex flex-col items-center justify-center">
-      <h2 className="text-2xl font-semibold mt-6">Create your first board!</h2>
+      <h2 className="text-2xl font-semibold mt-6">No boards yet</h2>
 
-      <p className="text-muted-foreground textg-sm mt-2">
-        Start by creating a board for your organization
-      </p>
+      <p className="text-muted-foreground text-sm mt-2">Create a board for this team</p>
 
       <div className="mt-6">
-        <Button disabled={pending} onClick={onClick} size="lg" className="cursor-pointer">
-          Create board
+        <Button disabled={isPending} onClick={onClick} size="lg" className="cursor-pointer">
+          Create a board
         </Button>
       </div>
     </div>

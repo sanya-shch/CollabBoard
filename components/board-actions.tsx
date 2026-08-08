@@ -1,7 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
 import { toast } from "sonner";
-import { Link2, Pencil, Trash2 } from "lucide-react";
+import { Link2, Pencil, Share2, Trash2 } from "lucide-react";
 
 import { ConfirmModal } from "@/components/modals/confirm-modal";
 import {
@@ -10,11 +12,11 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { api } from "@/convex/_generated/api";
-import { useApiMutation } from "@/hooks/use-api-mutation";
-import { Button } from "@/components/ui/button";
-import { useRenameModal } from "@/store/use-rename-modal";
 import type { Menu as MenuPrimitive } from "@base-ui/react/menu";
+import { useRenameModal } from "@/store/use-rename-modal";
+import { deleteBoard } from "@/actions/board";
+import { Button } from "@/components/ui/button";
+import { createBoardShareLink } from "@/actions/invite";
 
 interface ActionsProps {
   children: React.ReactElement;
@@ -25,8 +27,9 @@ interface ActionsProps {
 }
 
 export const Actions = ({ children, side, sideOffset, id, title }: ActionsProps) => {
+  const router = useRouter();
   const { onOpen } = useRenameModal();
-  const { mutate, pending } = useApiMutation(api.board.remove);
+  const [pending, startTransition] = useTransition();
 
   const onCopyLink = () => {
     navigator.clipboard
@@ -35,24 +38,60 @@ export const Actions = ({ children, side, sideOffset, id, title }: ActionsProps)
       .catch(() => toast.error("Failed to copy link"));
   };
 
+  const onCopyShareLink = () => {
+    startTransition(async () => {
+      const result = await createBoardShareLink({ boardId: id });
+
+      if ("error" in result || !("shareUrl" in result)) {
+        toast.error(result?.error ?? "Failed to create share link");
+        return;
+      }
+
+      await navigator.clipboard
+        .writeText(result.shareUrl)
+        .then(() => toast.success("Anonymous share link copied"))
+        .catch(() => toast.error("Failed to copy link"));
+    });
+  };
+
   const onDelete = () => {
-    mutate({ id })
-      .then(() => toast.success("Board deleted"))
-      .catch(() => toast.error("Failed to delete board"));
+    startTransition(async () => {
+      const result = await deleteBoard(id);
+
+      if (result?.error) {
+        toast.error(result.error);
+        return;
+      }
+
+      toast.success("Board deleted");
+
+      router.push("/");
+      router.refresh();
+    });
   };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={children} />
+
       <DropdownMenuContent
         onClick={(e) => e.stopPropagation()}
+        className="w-55"
         side={side}
         sideOffset={sideOffset}
-        className="w-60"
       >
         <DropdownMenuItem onClick={onCopyLink} className="p-3 cursor-pointer">
           <Link2 className="h-4 w-4 mr-2" />
           Copy board link
+        </DropdownMenuItem>
+
+        <DropdownMenuItem
+          onClick={onCopyShareLink}
+          disabled={pending}
+          className="p-3 cursor-pointer"
+        >
+          <Share2 className="h-4 w-4 mr-2" />
+          Copy anonymous share link
         </DropdownMenuItem>
 
         <DropdownMenuItem onClick={() => onOpen(id, title)} className="p-3 cursor-pointer">
@@ -68,7 +107,7 @@ export const Actions = ({ children, side, sideOffset, id, title }: ActionsProps)
         >
           <Button
             variant="ghost"
-            className="p-3 cursor-pointer text-sm w-full justify-start font-normal"
+            className="p-3 cursor-pointer text-sm w-full h-full justify-start font-normal text-red-600 hover:text-red-600"
           >
             <Trash2 className="h-4 w-4 mr-2" />
             Delete

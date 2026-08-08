@@ -1,53 +1,30 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
-import { Poppins } from "next/font/google";
-import { LayoutDashboard, Star } from "lucide-react";
-import { OrganizationSwitcher } from "@clerk/nextjs";
 import { useSearchParams } from "next/navigation";
-
+import { LayoutDashboard, Star, Settings } from "lucide-react";
+import { Organization } from "@/generated/prisma/client";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { useOrganizationSettingsModal } from "@/store/use-organization-settings-modal";
 import { cn } from "@/lib/utils";
-import { buttonVariants } from "@/components/ui/button";
 
-const font = Poppins({
-  subsets: ["latin"],
-  weight: ["600"],
-});
+interface OrgSidebarProps {
+  organization: Organization;
+}
 
-export const OrgSidebar = () => {
+export const OrgSidebar = ({ organization }: OrgSidebarProps) => {
   const searchParams = useSearchParams();
   const favorites = searchParams.get("favorites");
+  const { onOpen } = useOrganizationSettingsModal();
 
   return (
     <div className="hidden lg:flex flex-col space-y-6 w-[206px] pl-5 pt-5">
       <Link href="/">
         <div className="flex items-center gap-x-2">
-          <Image src="/logo.svg" alt="Logo" height={30} width={30} />
-          <span className={cn("font-semibold text-2xl", font.className)}>Boards</span>
+          <span className="font-semibold text-2xl">{organization.name}</span>
         </div>
       </Link>
-      <OrganizationSwitcher
-        hidePersonal
-        appearance={{
-          elements: {
-            rootBox: {
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              width: "100%",
-            },
-            organizationSwitcherTrigger: {
-              padding: "6px",
-              width: "100%",
-              borderRadius: "8px",
-              border: "1px solid #E5E7EB",
-              justifyContent: "space-between",
-              backgroundColor: "white",
-            },
-          },
-        }}
-      />
+
       <div className="space-y-1 w-full">
         <Link
           href="/"
@@ -73,6 +50,16 @@ export const OrgSidebar = () => {
           <Star className="h-4 w-4 mr-2" />
           Favorite boards
         </Link>
+
+        <Button
+          variant="ghost"
+          size="lg"
+          className="font-normal justify-start px-2 w-full cursor-pointer"
+          onClick={() => onOpen(organization.id)}
+        >
+          <Settings className="h-4 w-4 mr-2" />
+          Team settings
+        </Button>
       </div>
     </div>
   );

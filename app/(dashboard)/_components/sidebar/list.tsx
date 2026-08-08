@@ -1,27 +1,22 @@
-"use client";
+import { OrgItem } from "./item";
 
-import { useOrganizationList } from "@clerk/nextjs";
+interface OrgListProps {
+  organizations: { id: string; name: string; imageUrl?: string | null }[];
+  activeOrgId: string;
+}
 
-import { Item } from "./item";
-
-export const List = () => {
-  const { userMemberships } = useOrganizationList({
-    userMemberships: {
-      infinite: true,
-    },
-  });
-
-  if (!userMemberships.data?.length) return null;
-
+export const OrgList = ({ organizations, activeOrgId }: OrgListProps) => {
   return (
-    <ul className="space-y-4">
-      {userMemberships.data?.map((mem) => (
-        <Item
-          key={mem.organization.id}
-          id={mem.organization.id}
-          name={mem.organization.name}
-          imageUrl={mem.organization.imageUrl}
-        />
+    <ul className="space-y-4 flex flex-col items-center">
+      {organizations.map((org) => (
+        <li key={org.id}>
+          <OrgItem
+            id={org.id}
+            name={org.name}
+            imageUrl={org.imageUrl}
+            isActive={org.id === activeOrgId}
+          />
+        </li>
       ))}
     </ul>
   );

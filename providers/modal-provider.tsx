@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 
 import { RenameModal } from "@/components/modals/rename-modal";
+import { CreateOrganizationModal } from "@/components/modals/create-organization-modal";
+import { OrganizationSettingsModal } from "@/components/modals/organization-settings-modal";
 
 export const ModalProvider = () => {
   const [isMounted, setIsMounted] = useState(false);
@@ -19,6 +21,8 @@ export const ModalProvider = () => {
   return (
     <>
       <RenameModal />
+      <CreateOrganizationModal />
+      <OrganizationSettingsModal />
     </>
   );
 };

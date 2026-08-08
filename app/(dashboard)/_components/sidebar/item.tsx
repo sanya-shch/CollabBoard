@@ -1,42 +1,54 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
 import Image from "next/image";
-import { useOrganization, useOrganizationList } from "@clerk/nextjs";
-
 import { cn } from "@/lib/utils";
 import { Hint } from "@/components/hint";
 
-interface ItemProps {
+interface OrgItemProps {
   id: string;
   name: string;
-  imageUrl: string;
+  imageUrl?: string | null;
+  isActive: boolean;
 }
 
-export const Item = ({ id, name, imageUrl }: ItemProps) => {
-  const { organization } = useOrganization();
-  const { setActive } = useOrganizationList();
+export const OrgItem = ({ id, name, imageUrl, isActive }: OrgItemProps) => {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
-  const isActive = organization?.id === id;
+  const initials = name.slice(0, 1).toUpperCase();
+
+  const hintLabel = isActive ? `${name} (Current)` : name;
 
   const onClick = () => {
-    if (!setActive) return;
+    if (isActive || isPending) return;
 
-    setActive({ organization: id });
+    startTransition(async () => {
+      await fetch("/api/organizations/switch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ organizationId: id }),
+      });
+      router.push("/");
+      router.refresh();
+    });
   };
 
   return (
     <div className="aspect-square relative">
-      <Hint label={name} side="right" align="start" sideOffset={18}>
-        <Image
-          fill
-          alt={name}
-          src={imageUrl}
+      <Hint label={hintLabel} side="right" align="start" sideOffset={18}>
+        <button
           onClick={onClick}
+          disabled={isPending}
+          title={name}
           className={cn(
-            "rounded-md cursor-pointer opacity-75 hover:opacity-100 transition",
-            isActive && "opacity-100",
+            "h-10 w-10 rounded-xl bg-white/25 opacity-60 hover:opacity-100 transition",
+            isActive ? "opacity-100" : "cursor-pointer",
           )}
-        />
+        >
+          {imageUrl ? <Image src={imageUrl} alt={name} fill className="object-cover" /> : initials}
+        </button>
       </Hint>
     </div>
   );

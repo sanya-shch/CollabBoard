@@ -1,24 +1,20 @@
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+"use client";
+
 import { Plus } from "lucide-react";
-import { CreateOrganization } from "@clerk/nextjs";
-import { Hint } from "@/components/hint";
+import { useCreateOrganizationModal } from "@/store/use-create-organization-modal";
 
-export function CreateOrganizationButton() {
+export const NewButton = () => {
+  const { onOpen } = useCreateOrganizationModal();
+
   return (
-    <Dialog>
-      <DialogTrigger>
-        <div className="aspect-square">
-          <Hint label="Create organization" side="right" align="start" sideOffset={18}>
-            <div className="bg-white/25 h-full w-full rounded-md flex items-center justify-center opacity-60 hover:opacity-100 transition cursor-pointer">
-              <Plus className="text-white" aria-label="Create Organization" />
-            </div>
-          </Hint>
-        </div>
-      </DialogTrigger>
-
-      <DialogContent className="p-0 bg-transparent border-none max-w-[480px]">
-        <CreateOrganization />
-      </DialogContent>
-    </Dialog>
+    <div className="aspect-square">
+      <button
+        onClick={onOpen}
+        className="bg-white/25 h-10 w-10 rounded-xl flex items-center justify-center opacity-60 hover:opacity-100 transition cursor-pointer"
+        title="Create Team"
+      >
+        <Plus className="text-white" />
+      </button>
+    </div>
   );
-}
+};
