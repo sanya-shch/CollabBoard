@@ -39,6 +39,13 @@ describe("proxy - unauthenticated visitors", () => {
     },
   );
 
+  it.each(["/boardroom", "/board-linkage", "/invitecode", "/invalid-link/extra"])(
+    "does not treat the look-alike path %s as public",
+    async (path) => {
+      expect(redirectTarget(await call(path))?.pathname).toBe("/login");
+    },
+  );
+
   it.each(["/login", "/register", "/reset", "/new-password"])(
     "lets the auth page %s through",
     async (path) => {

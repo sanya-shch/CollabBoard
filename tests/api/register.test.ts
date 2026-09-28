@@ -66,6 +66,34 @@ describe("POST /api/auth/register - validation", () => {
   });
 });
 
+describe("POST /api/auth/register - concurrent duplicate signup", () => {
+  const uniqueViolation = Object.assign(new Error("Unique constraint failed"), { code: "P2002" });
+
+  it("returns 409 (not 500) when the unique constraint rejects a simultaneous signup", async () => {
+    prismaMock.user.findUnique.mockResolvedValueOnce(null); // passes the pre-check
+    prismaMock.$transaction.mockRejectedValue(uniqueViolation);
+    prismaMock.user.findUnique.mockResolvedValueOnce({ id: "winner" } as never); // the other request won
+
+    const res = await register(valid);
+
+    expect(res.status).toBe(409);
+    expect(sendVerificationEmailMock).not.toHaveBeenCalled();
+  });
+
+  it("rethrows a P2002 that is not caused by an existing user", async () => {
+    prismaMock.$transaction.mockRejectedValue(uniqueViolation);
+
+    await expect(register(valid)).rejects.toBe(uniqueViolation);
+  });
+
+  it("rethrows unexpected database errors instead of masking them", async () => {
+    const dbDown = new Error("connection lost");
+    prismaMock.$transaction.mockRejectedValue(dbDown);
+
+    await expect(register(valid)).rejects.toBe(dbDown);
+  });
+});
+
 describe("POST /api/auth/register - new team", () => {
   it("creates the user with a hashed password, a personal team and an ADMIN membership", async () => {
     const res = await register(valid);

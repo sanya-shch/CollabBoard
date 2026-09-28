@@ -6,6 +6,10 @@ import { generateVerificationToken } from "@/lib/tokens";
 import { sendVerificationEmail } from "@/lib/mail";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
+function isUniqueConstraintError(err: unknown) {
+  return typeof err === "object" && err !== null && (err as { code?: unknown }).code === "P2002";
+}
+
 function slugify(input: string) {
   return input
     .toLowerCase()
@@ -57,31 +61,48 @@ export async function POST(request: Request) {
 
   const hashedPassword = await hashPassword(password);
 
-  await db.$transaction(async (tx) => {
-    const user = await tx.user.create({
-      data: { name, email, hashedPassword },
+  try {
+    await db.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: { name, email, hashedPassword },
+      });
+
+      if (invite) {
+        await tx.membership.create({
+          data: {
+            userId: user.id,
+            organizationId: invite.organizationId,
+            role: invite.role,
+          },
+        });
+        await tx.invite.delete({ where: { id: invite.id } });
+      } else {
+        const orgName = `${name}'s Team`;
+        const slug = `${slugify(orgName)}-${user.id.slice(0, 6)}`;
+
+        const organization = await tx.organization.create({
+          data: { name: orgName, slug },
+        });
+
+        await tx.membership.create({
+          data: {
+            userId: user.id,
+            organizationId: organization.id,
+            role: "ADMIN",
+          },
+        });
+      }
+
+      return user;
     });
-
-    if (invite) {
-      await tx.membership.create({
-        data: { userId: user.id, organizationId: invite.organizationId, role: invite.role },
-      });
-      await tx.invite.delete({ where: { id: invite.id } });
-    } else {
-      const orgName = `${name}'s Team`;
-      const slug = `${slugify(orgName)}-${user.id.slice(0, 6)}`;
-
-      const organization = await tx.organization.create({
-        data: { name: orgName, slug },
-      });
-
-      await tx.membership.create({
-        data: { userId: user.id, organizationId: organization.id, role: "ADMIN" },
-      });
+  } catch (err) {
+    // Two simultaneous signups with the same email can both pass the check above;
+    // the unique constraint then rejects the loser. Report it as a normal duplicate.
+    if (isUniqueConstraintError(err) && (await db.user.findUnique({ where: { email } }))) {
+      return NextResponse.json({ error: "A user with this email already exists" }, { status: 409 });
     }
-
-    return user;
-  });
+    throw err;
+  }
 
   const verificationToken = await generateVerificationToken(email);
 
@@ -97,5 +118,7 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json({ success: "Check your email to confirm your account." });
+  return NextResponse.json({
+    success: "Check your email to confirm your account.",
+  });
 }

@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { prismaMock } from "../mocks/db";
 import { sendPasswordResetEmailMock } from "../mocks/mail";
 import { POST } from "@/app/api/auth/forgot-password/route";
@@ -60,9 +60,15 @@ describe("POST /api/auth/forgot-password", () => {
       token: "tok",
       expires: new Date(),
     });
+    const logSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     sendPasswordResetEmailMock.mockRejectedValue(new Error("smtp down"));
 
     expect((await forgot({ email: "a@a.com" })).status).toBe(200);
+    expect(logSpy).toHaveBeenCalledWith(
+      "[forgot-password] failed to send reset email:",
+      expect.any(Error),
+    );
+    logSpy.mockRestore();
   });
 
   it("returns 429 after 3 attempts from one IP", async () => {
