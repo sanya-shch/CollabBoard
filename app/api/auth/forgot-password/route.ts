@@ -3,10 +3,22 @@ import { db } from "@/lib/db";
 import { ResetSchema } from "@/schemas";
 import { generatePasswordResetToken } from "@/lib/tokens";
 import { sendPasswordResetEmail } from "@/lib/mail";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 const GENERIC_MESSAGE = "If such an email is registered, a letter has been sent to it";
 
 export async function POST(request: Request) {
+  const { allowed, retryAfterSeconds } = checkRateLimit(`forgot-password:${getClientIp(request)}`, {
+    limit: 3,
+    windowMs: 60_000,
+  });
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many attempts. Please try again later." },
+      { status: 429, headers: { "Retry-After": String(retryAfterSeconds) } },
+    );
+  }
+
   const body = await request.json();
   const validated = ResetSchema.safeParse(body);
 

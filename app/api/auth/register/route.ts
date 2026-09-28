@@ -4,6 +4,7 @@ import { RegisterSchema } from "@/schemas";
 import { hashPassword } from "@/lib/password";
 import { generateVerificationToken } from "@/lib/tokens";
 import { sendVerificationEmail } from "@/lib/mail";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 function slugify(input: string) {
   return input
@@ -14,6 +15,17 @@ function slugify(input: string) {
 }
 
 export async function POST(request: Request) {
+  const { allowed, retryAfterSeconds } = checkRateLimit(`register:${getClientIp(request)}`, {
+    limit: 5,
+    windowMs: 60_000,
+  });
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many attempts. Please try again later." },
+      { status: 429, headers: { "Retry-After": String(retryAfterSeconds) } },
+    );
+  }
+
   const body = await request.json();
   const validated = RegisterSchema.safeParse(body);
 

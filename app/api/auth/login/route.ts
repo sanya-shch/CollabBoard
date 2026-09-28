@@ -5,8 +5,20 @@ import { verifyPassword } from "@/lib/password";
 import { buildSessionCookie } from "@/lib/session";
 import { generateVerificationToken } from "@/lib/tokens";
 import { sendVerificationEmail } from "@/lib/mail";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  const { allowed, retryAfterSeconds } = checkRateLimit(`login:${getClientIp(request)}`, {
+    limit: 5,
+    windowMs: 60_000,
+  });
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many attempts. Please try again later." },
+      { status: 429, headers: { "Retry-After": String(retryAfterSeconds) } },
+    );
+  }
+
   const body = await request.json();
   const validated = LoginSchema.safeParse(body);
 

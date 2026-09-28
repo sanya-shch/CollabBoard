@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/current-user";
+import { AppError } from "./errors";
 
 export const getMembership = async (organizationId: string) => {
   const user = await requireUser();
@@ -11,13 +12,13 @@ export const getMembership = async (organizationId: string) => {
 
 export const requireOrgMember = async (organizationId: string) => {
   const membership = await getMembership(organizationId);
-  if (!membership) throw new Error("You are not a member of this organization");
+  if (!membership) throw new AppError("You are not a member of this organization", 403);
   return membership;
 };
 
 export const requireOrgAdmin = async (organizationId: string) => {
   const membership = await requireOrgMember(organizationId);
-  if (membership.role !== "ADMIN") throw new Error("Administrator rights required");
+  if (membership.role !== "ADMIN") throw new AppError("Administrator rights required", 403);
   return membership;
 };
 
@@ -30,6 +31,6 @@ export const assertNotLastAdmin = async (organizationId: string, userId: string)
   });
 
   if (targetIsAdmin?.role === "ADMIN" && admins <= 1) {
-    throw new Error("You can't leave a team without any admin");
+    throw new AppError("You can't leave a team without any admin", 400);
   }
 };

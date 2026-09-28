@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { verifySessionToken } from "@/lib/jwt";
 import { SESSION_COOKIE } from "@/lib/constants";
+import { AppError } from "./errors";
 
 // Returns the user from the active session, or null. Intentionally rereads the user
 // from the DB (and does not trust only the JWT payload) - so the email/name in the UI
@@ -23,7 +24,7 @@ export async function getCurrentUser() {
 // Catch this error and show the fallback UI - the caller's responsibility, or let it go (Next will show the error boundary).
 export async function requireAuth() {
   const user = await getCurrentUser();
-  if (!user) throw new Error("Unauthorized");
+  if (!user) throw new AppError("Unauthorized", 401);
   return user;
 }
 
