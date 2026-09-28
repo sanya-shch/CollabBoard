@@ -20,13 +20,13 @@ import {
   findIntersectingLayersWithRectangle,
   colorToCss,
   penPointsToPathLayer,
+  liveLayersToMap,
 } from "@/lib/utils";
 import {
   Camera,
   CanvasMode,
   CanvasState,
   Color,
-  Layer,
   LayerType,
   Point,
   Side,
@@ -143,7 +143,7 @@ export const Canvas = ({ board }: CanvasProps) => {
     ({ storage, setMyPresence }, current: Point, origin: Point) => {
       const layers = storage.get("layers");
 
-      const layersMap: ReadonlyMap<string, Layer> = new Map(Object.entries(layers));
+      const layersMap = liveLayersToMap(layers);
 
       setCanvasState({
         mode: CanvasMode.SelectionNet,

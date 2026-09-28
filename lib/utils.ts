@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import type { LiveMap, LiveObject } from "@liveblocks/client";
 import { Camera, Color, Point, Side, Layer, LayerType, PathLayer, XYWH } from "@/types/canvas";
 
 const COLORS = [
@@ -67,6 +68,15 @@ export function resizeBounds(bounds: XYWH, corner: Side, point: Point): XYWH {
   }
 
   return result;
+}
+
+// storage.get("layers") returns a live LiveMap: its entries are internal, not own
+// enumerable properties, so Object.entries(liveLayers) always returns []. Iterate it
+// directly and unwrap each LiveObject to a plain Layer with .toJSON().
+export function liveLayersToMap(
+  liveLayers: LiveMap<string, LiveObject<Layer>>,
+): ReadonlyMap<string, Layer> {
+  return new Map(Array.from(liveLayers, ([id, layer]) => [id, layer.toJSON()] as const));
 }
 
 export function findIntersectingLayersWithRectangle(
