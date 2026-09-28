@@ -25,14 +25,20 @@ A Miro-style collaborative whiteboard built with Next.js. Multiple users can cre
 
 ## Getting Started
 
+Requirements: Node 22+, Docker.
+
 ```bash
+cp .env.example .env        # then fill in AUTH_SECRET, LIVEBLOCKS_SECRET_KEY, RESEND_API_KEY
 npm install
+npm run db:up               # starts PostgreSQL in Docker (waits until healthy)
 npx prisma generate
-npx prisma migrate dev
+npm run db:migrate          # applies migrations to the local database
 npm run dev
 ```
 
-Environment variables required: `DATABASE_URL`, `AUTH_SECRET`, `LIVEBLOCKS_SECRET_KEY`, `NEXT_PUBLIC_APP_URL`, `RESEND_API_KEY`.
+Useful scripts: `npm run db:down` (stop the DB, keep data), `npm run db:reset` (wipe the DB volume and re-apply migrations), `npm run lint`, `npm run typecheck`, `npm test`.
+
+Environment variables: see [`.env.example`](.env.example). `EMAIL_FROM` is optional.
 
 ## Screenshots
 

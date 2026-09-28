@@ -12,7 +12,17 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "generated/**",
   ]),
+  {
+    files: ["tests/**/*.ts"],
+    rules: { "@typescript-eslint/no-explicit-any": "off" },
+  },
+  {
+    // Liveblocks' documented global type augmentation uses empty object types.
+    files: ["liveblocks.config.ts"],
+    rules: { "@typescript-eslint/no-empty-object-type": "off" },
+  },
 ]);
 
 export default eslintConfig;

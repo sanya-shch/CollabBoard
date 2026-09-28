@@ -26,7 +26,7 @@ describe("generateVerificationToken", () => {
     const { data } = prismaMock.verificationToken.create.mock.calls[0][0];
     expect(data.email).toBe("a@a.com");
     expect(data.token).toMatch(/^[0-9a-f-]{36}$/);
-    expect(data.expires.getTime()).toBe(NOW.getTime() + 24 * HOUR);
+    expect(new Date(data.expires).getTime()).toBe(NOW.getTime() + 24 * HOUR);
   });
 
   it("generates a different token on each call", async () => {
@@ -45,7 +45,7 @@ describe("generatePasswordResetToken", () => {
       where: { email: "a@a.com" },
     });
     const { data } = prismaMock.passwordResetToken.create.mock.calls[0][0];
-    expect(data.expires.getTime()).toBe(NOW.getTime() + HOUR);
+    expect(new Date(data.expires).getTime()).toBe(NOW.getTime() + HOUR);
   });
 });
 
@@ -58,7 +58,7 @@ describe("generateOrgInviteToken", () => {
     });
     const { data } = prismaMock.invite.create.mock.calls[0][0];
     expect(data).toMatchObject({ organizationId: "org_1", email: "b@b.com", role: "MEMBER" });
-    expect(data.expiresAt.getTime()).toBe(NOW.getTime() + 7 * 24 * HOUR);
+    expect(new Date(data.expiresAt as Date).getTime()).toBe(NOW.getTime() + 7 * 24 * HOUR);
   });
 });
 
@@ -76,6 +76,6 @@ describe("generateBoardShareToken", () => {
     await generateBoardShareToken({ boardId: "b1", expiresInDays: 2 });
 
     const { data } = prismaMock.boardShareLink.create.mock.calls[0][0];
-    expect(data.expiresAt?.getTime()).toBe(NOW.getTime() + 48 * HOUR);
+    expect(new Date(data.expiresAt as Date).getTime()).toBe(NOW.getTime() + 48 * HOUR);
   });
 });
