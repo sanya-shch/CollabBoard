@@ -76,7 +76,12 @@ export const Canvas = ({ board }: CanvasProps) => {
   const insertLayer = useMutation(
     (
       { storage, setMyPresence },
-      layerType: LayerType.Ellipse | LayerType.Rectangle | LayerType.Text | LayerType.Note,
+      layerType:
+        | LayerType.Ellipse
+        | LayerType.Rectangle
+        | LayerType.Text
+        | LayerType.Note
+        | LayerType.Diamond,
       position: Point,
     ) => {
       const liveLayers = storage.get("layers");
@@ -220,12 +225,12 @@ export const Canvas = ({ board }: CanvasProps) => {
   );
 
   const resizeSelectedLayer = useMutation(
-    ({ storage, self }, point: Point) => {
+    ({ storage, self }, point: Point, lockAspect: boolean) => {
       if (canvasState.mode !== CanvasMode.Resizing) {
         return;
       }
 
-      const bounds = resizeBounds(canvasState.initialBounds, canvasState.corner, point);
+      const bounds = resizeBounds(canvasState.initialBounds, canvasState.corner, point, lockAspect);
 
       const liveLayers = storage.get("layers");
       const layer = liveLayers.get(self.presence.selection[0]);
@@ -269,7 +274,9 @@ export const Canvas = ({ board }: CanvasProps) => {
       } else if (canvasState.mode === CanvasMode.Translating) {
         translateSelectedLayers(current);
       } else if (canvasState.mode === CanvasMode.Resizing) {
-        resizeSelectedLayer(current);
+        // Hold Shift while dragging a corner handle to keep the shape's aspect ratio
+        // (a square stays a square, a circle stays a circle instead of becoming an oval).
+        resizeSelectedLayer(current, e.shiftKey);
       } else if (canvasState.mode === CanvasMode.Pencil) {
         continueDrawing(current, e);
       }

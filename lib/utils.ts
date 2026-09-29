@@ -39,7 +39,7 @@ export function colorToCss(color: Color) {
   return `#${color.r.toString(16).padStart(2, "0")}${color.g.toString(16).padStart(2, "0")}${color.b.toString(16).padStart(2, "0")}`;
 }
 
-export function resizeBounds(bounds: XYWH, corner: Side, point: Point): XYWH {
+export function resizeBounds(bounds: XYWH, corner: Side, point: Point, lockAspect = false): XYWH {
   const result = {
     x: bounds.x,
     y: bounds.y,
@@ -65,6 +65,25 @@ export function resizeBounds(bounds: XYWH, corner: Side, point: Point): XYWH {
   if ((corner & Side.Bottom) === Side.Bottom) {
     result.y = Math.min(point.y, bounds.y);
     result.height = Math.abs(point.y - bounds.y);
+  }
+
+  // Aspect-ratio lock only makes sense on a corner handle - a single edge handle only
+  // drags one axis, so there's no natural "other" delta to derive a ratio from.
+  const isCornerHandle =
+    (corner & (Side.Left | Side.Right)) !== 0 && (corner & (Side.Top | Side.Bottom)) !== 0;
+
+  if (lockAspect && isCornerHandle && bounds.width !== 0 && bounds.height !== 0) {
+    // Whichever axis the pointer moved further along (relative to its original size)
+    // wins, and the other axis is scaled to match - this is what "drag a corner with
+    // Shift held" means in most design tools.
+    const scale = Math.max(result.width / bounds.width, result.height / bounds.height);
+    const width = bounds.width * scale;
+    const height = bounds.height * scale;
+
+    result.x = (corner & Side.Left) === Side.Left ? bounds.x + bounds.width - width : bounds.x;
+    result.y = (corner & Side.Top) === Side.Top ? bounds.y + bounds.height - height : bounds.y;
+    result.width = width;
+    result.height = height;
   }
 
   return result;

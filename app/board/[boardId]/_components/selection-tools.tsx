@@ -146,63 +146,73 @@ export const SelectionTools = memo(({ camera, setLastUsedColor }: SelectionTools
       <ColorPicker onChange={setFill} />
 
       {selection.length > 1 && (
-        <div className="flex items-center pl-2 ml-2 border-l border-neutral-200 gap-x-0.5">
-          <Hint label="Align left">
-            <Button variant="board" size="icon" onClick={() => applyPositions(alignLeft)}>
-              <AlignStartVertical />
-            </Button>
-          </Hint>
-          <Hint label="Align center">
+        <div className="flex flex-col gap-y-1 pr-2 mr-2 border-r border-neutral-200">
+          <div className="flex items-center gap-x-0.5">
+            <Hint label="Align left">
+              <Button variant="board" size="icon" onClick={() => applyPositions(alignLeft)}>
+                <AlignStartVertical />
+              </Button>
+            </Hint>
+            <Hint label="Align center">
+              <Button
+                variant="board"
+                size="icon"
+                onClick={() => applyPositions(alignCenterHorizontal)}
+              >
+                <AlignCenterVertical />
+              </Button>
+            </Hint>
+            <Hint label="Align right">
+              <Button variant="board" size="icon" onClick={() => applyPositions(alignRight)}>
+                <AlignEndVertical />
+              </Button>
+            </Hint>
+          </div>
+
+          <div className="flex items-center gap-x-0.5">
+            <Hint label="Align top">
+              <Button variant="board" size="icon" onClick={() => applyPositions(alignTop)}>
+                <AlignStartHorizontal />
+              </Button>
+            </Hint>
+            <Hint label="Align middle">
+              <Button
+                variant="board"
+                size="icon"
+                onClick={() => applyPositions(alignMiddleVertical)}
+              >
+                <AlignCenterHorizontal />
+              </Button>
+            </Hint>
+            <Hint label="Align bottom">
+              <Button variant="board" size="icon" onClick={() => applyPositions(alignBottom)}>
+                <AlignEndHorizontal />
+              </Button>
+            </Hint>
+          </div>
+        </div>
+      )}
+
+      {selection.length > 2 && (
+        <div className="flex flex-col gap-y-1 pr-2 mr-2 border-r border-neutral-200">
+          <Hint label="Distribute horizontally">
             <Button
               variant="board"
               size="icon"
-              onClick={() => applyPositions(alignCenterHorizontal)}
+              onClick={() => applyPositions(distributeHorizontally)}
             >
-              <AlignCenterVertical />
+              <AlignHorizontalDistributeCenter />
             </Button>
           </Hint>
-          <Hint label="Align right">
-            <Button variant="board" size="icon" onClick={() => applyPositions(alignRight)}>
-              <AlignEndVertical />
+          <Hint label="Distribute vertically">
+            <Button
+              variant="board"
+              size="icon"
+              onClick={() => applyPositions(distributeVertically)}
+            >
+              <AlignVerticalDistributeCenter />
             </Button>
           </Hint>
-          <Hint label="Align top">
-            <Button variant="board" size="icon" onClick={() => applyPositions(alignTop)}>
-              <AlignStartHorizontal />
-            </Button>
-          </Hint>
-          <Hint label="Align middle">
-            <Button variant="board" size="icon" onClick={() => applyPositions(alignMiddleVertical)}>
-              <AlignCenterHorizontal />
-            </Button>
-          </Hint>
-          <Hint label="Align bottom">
-            <Button variant="board" size="icon" onClick={() => applyPositions(alignBottom)}>
-              <AlignEndHorizontal />
-            </Button>
-          </Hint>
-          {selection.length > 2 && (
-            <>
-              <Hint label="Distribute horizontally">
-                <Button
-                  variant="board"
-                  size="icon"
-                  onClick={() => applyPositions(distributeHorizontally)}
-                >
-                  <AlignHorizontalDistributeCenter />
-                </Button>
-              </Hint>
-              <Hint label="Distribute vertically">
-                <Button
-                  variant="board"
-                  size="icon"
-                  onClick={() => applyPositions(distributeVertically)}
-                >
-                  <AlignVerticalDistributeCenter />
-                </Button>
-              </Hint>
-            </>
-          )}
         </div>
       )}
 

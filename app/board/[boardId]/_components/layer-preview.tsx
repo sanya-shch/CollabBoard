@@ -8,6 +8,7 @@ import { colorToCss } from "@/lib/utils";
 
 import { Rectangle } from "./rectangle";
 import { Ellipse } from "./ellipse";
+import { Diamond } from "./diamond";
 import { Text } from "./text";
 import { Note } from "./note";
 import { Path } from "./path";
@@ -39,6 +40,15 @@ export const LayerPreview = memo(
       case LayerType.Ellipse:
         return (
           <Ellipse
+            id={id}
+            layer={layer}
+            onPointerDown={onLayerPointerDown}
+            selectionColor={selectionColor}
+          />
+        );
+      case LayerType.Diamond:
+        return (
+          <Diamond
             id={id}
             layer={layer}
             onPointerDown={onLayerPointerDown}

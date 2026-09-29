@@ -1,5 +1,6 @@
 import {
   Circle,
+  Diamond as DiamondIcon,
   MousePointer2,
   Pencil,
   Redo2,
@@ -104,6 +105,20 @@ export const Toolbar = ({
           }
           isActive={
             canvasState.mode === CanvasMode.Inserting && canvasState.layerType === LayerType.Ellipse
+          }
+        />
+
+        <ToolButton
+          label="Diamond"
+          icon={DiamondIcon}
+          onClick={() =>
+            setCanvasState({
+              mode: CanvasMode.Inserting,
+              layerType: LayerType.Diamond,
+            })
+          }
+          isActive={
+            canvasState.mode === CanvasMode.Inserting && canvasState.layerType === LayerType.Diamond
           }
         />
 
