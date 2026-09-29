@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { toast } from "sonner";
-import { Link2, Pencil, Share2, Trash2 } from "lucide-react";
+import { Link2, Pencil, Share2, Eye, Trash2 } from "lucide-react";
 
 import { ConfirmModal } from "@/components/modals/confirm-modal";
 import {
@@ -38,9 +38,9 @@ export const Actions = ({ children, side, sideOffset, id, title }: ActionsProps)
       .catch(() => toast.error("Failed to copy link"));
   };
 
-  const onCopyShareLink = () => {
+  const onCopyShareLink = (canEdit: boolean) => {
     startTransition(async () => {
-      const result = await createBoardShareLink({ boardId: id });
+      const result = await createBoardShareLink({ boardId: id, canEdit });
 
       if ("error" in result || !("shareUrl" in result)) {
         toast.error(result?.error ?? "Failed to create share link");
@@ -49,7 +49,9 @@ export const Actions = ({ children, side, sideOffset, id, title }: ActionsProps)
 
       await navigator.clipboard
         .writeText(result.shareUrl)
-        .then(() => toast.success("Anonymous share link copied"))
+        .then(() =>
+          toast.success(canEdit ? "Anonymous share link copied" : "Read-only share link copied"),
+        )
         .catch(() => toast.error("Failed to copy link"));
     });
   };
@@ -86,12 +88,21 @@ export const Actions = ({ children, side, sideOffset, id, title }: ActionsProps)
         </DropdownMenuItem>
 
         <DropdownMenuItem
-          onClick={onCopyShareLink}
+          onClick={() => onCopyShareLink(true)}
           disabled={pending}
           className="p-3 cursor-pointer"
         >
           <Share2 className="h-4 w-4 mr-2" />
           Copy anonymous share link
+        </DropdownMenuItem>
+
+        <DropdownMenuItem
+          onClick={() => onCopyShareLink(false)}
+          disabled={pending}
+          className="p-3 cursor-pointer"
+        >
+          <Eye className="h-4 w-4 mr-2" />
+          Copy read-only share link
         </DropdownMenuItem>
 
         <DropdownMenuItem onClick={() => onOpen(id, title)} className="p-3 cursor-pointer">

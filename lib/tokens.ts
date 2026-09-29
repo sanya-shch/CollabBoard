@@ -56,11 +56,12 @@ export const generateOrgInviteToken = async (params: {
 export const generateBoardShareToken = async (params: {
   boardId: string;
   expiresInDays?: number;
+  canEdit?: boolean;
 }) => {
   const token = crypto.randomBytes(24).toString("hex");
   const expiresAt = params.expiresInDays ? expiresIn(24 * params.expiresInDays) : null;
 
   return db.boardShareLink.create({
-    data: { boardId: params.boardId, token, expiresAt },
+    data: { boardId: params.boardId, token, expiresAt, canEdit: params.canEdit ?? true },
   });
 };

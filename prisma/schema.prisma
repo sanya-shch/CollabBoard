@@ -131,6 +131,7 @@ model BoardShareLink {
   token     String    @unique
   expiresAt DateTime?
   revoked   Boolean   @default(false)
+  canEdit   Boolean   @default(true)
   createdAt DateTime  @default(now())
 
   board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)

@@ -77,14 +77,14 @@ export const createBoardShareLink = async (values: z.infer<typeof CreateBoardSha
     const validated = CreateBoardShareLinkSchema.safeParse(values);
     if (!validated.success) return { error: "Incorrect data" };
 
-    const { boardId, expiresInDays } = validated.data;
+    const { boardId, expiresInDays, canEdit } = validated.data;
 
     const board = await db.board.findUnique({ where: { id: boardId } });
     if (!board) return { error: "Board not found" };
 
     await requireOrgMember(board.organizationId);
 
-    const link = await generateBoardShareToken({ boardId, expiresInDays });
+    const link = await generateBoardShareToken({ boardId, expiresInDays, canEdit });
 
     const shareUrl = `${process.env.NEXT_PUBLIC_APP_URL}/board-link/${link.token}`;
     return { success: "Link created", shareUrl, linkId: link.id };

@@ -64,6 +64,10 @@ export const Canvas = ({ board }: CanvasProps) => {
     b: 0,
   });
   const pencilDraft = useSelf((me) => me.presence.pencilDraft);
+  // Liveblocks rejects Storage writes server-side for a READ_ACCESS token regardless
+  // of what the UI does, but hiding the editing affordances avoids "I clicked it and
+  // nothing happened" for read-only share-link guests.
+  const readOnly = useSelf((me) => me.canWrite) === false;
 
   useDisableScrollBounce();
 
@@ -75,7 +79,7 @@ export const Canvas = ({ board }: CanvasProps) => {
 
   const insertLayer = useMutation(
     (
-      { storage, setMyPresence },
+      { storage, setMyPresence, self },
       layerType:
         | LayerType.Ellipse
         | LayerType.Rectangle
@@ -84,6 +88,8 @@ export const Canvas = ({ board }: CanvasProps) => {
         | LayerType.Diamond,
       position: Point,
     ) => {
+      if (!self.canWrite) return;
+
       const liveLayers = storage.get("layers");
       if (liveLayers.size >= MAX_LAYERS) {
         return;
@@ -111,7 +117,7 @@ export const Canvas = ({ board }: CanvasProps) => {
 
   const translateSelectedLayers = useMutation(
     ({ storage, self }, point: Point) => {
-      if (canvasState.mode !== CanvasMode.Translating) {
+      if (canvasState.mode !== CanvasMode.Translating || !self.canWrite) {
         return;
       }
 
@@ -194,14 +200,19 @@ export const Canvas = ({ board }: CanvasProps) => {
 
   const insertPath = useMutation(
     ({ storage, self, setMyPresence }) => {
-      const liveLayers = storage.get("layers");
       const { pencilDraft } = self.presence;
 
-      if (pencilDraft == null || pencilDraft.length < 2 || liveLayers.size >= MAX_LAYERS) {
+      if (
+        !self.canWrite ||
+        pencilDraft == null ||
+        pencilDraft.length < 2 ||
+        storage.get("layers").size >= MAX_LAYERS
+      ) {
         setMyPresence({ pencilDraft: null });
         return;
       }
 
+      const liveLayers = storage.get("layers");
       const id = nanoid();
       liveLayers.set(id, new LiveObject(penPointsToPathLayer(pencilDraft, lastUsedColor)));
 
@@ -226,7 +237,7 @@ export const Canvas = ({ board }: CanvasProps) => {
 
   const resizeSelectedLayer = useMutation(
     ({ storage, self }, point: Point, lockAspect: boolean) => {
-      if (canvasState.mode !== CanvasMode.Resizing) {
+      if (canvasState.mode !== CanvasMode.Resizing || !self.canWrite) {
         return;
       }
 
@@ -348,14 +359,19 @@ export const Canvas = ({ board }: CanvasProps) => {
         return;
       }
 
-      history.pause();
       e.stopPropagation();
-
-      const point = pointerEventToCanvasPoint(e, camera);
 
       if (!self.presence.selection.includes(layerId)) {
         setMyPresence({ selection: [layerId] }, { addToHistory: true });
       }
+
+      // Read-only guests can select a layer to look at it, but there is nothing to
+      // drag: don't pause history or enter Translating for a move that would be
+      // rejected server-side anyway.
+      if (!self.canWrite) return;
+
+      history.pause();
+      const point = pointerEventToCanvasPoint(e, camera);
       setCanvasState({ mode: CanvasMode.Translating, current: point });
     },
     [setCanvasState, camera, history, canvasState.mode],
@@ -413,9 +429,10 @@ export const Canvas = ({ board }: CanvasProps) => {
         canUndo={canUndo}
         undo={history.undo}
         redo={history.redo}
+        readOnly={readOnly}
       />
 
-      <SelectionTools camera={camera} setLastUsedColor={setLastUsedColor} />
+      {!readOnly && <SelectionTools camera={camera} setLastUsedColor={setLastUsedColor} />}
 
       <svg
         className="h-[100vh] w-[100vw]"
@@ -439,7 +456,7 @@ export const Canvas = ({ board }: CanvasProps) => {
             />
           ))}
 
-          <SelectionBox onResizeHandlePointerDown={onResizeHandlePointerDown} />
+          <SelectionBox onResizeHandlePointerDown={onResizeHandlePointerDown} readOnly={readOnly} />
 
           {canvasState.mode === CanvasMode.SelectionNet && canvasState.current != null && (
             <rect

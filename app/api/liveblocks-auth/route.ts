@@ -50,9 +50,9 @@ export async function POST(request: Request) {
     if (isValid) {
       const guestId = `guest:${crypto.randomUUID()}`;
       const ls = liveblocks.prepareSession(guestId, {
-        userInfo: { name: "Guest", picture: undefined },
+        userInfo: { name: link.canEdit ? "Guest" : "Guest (view only)", picture: undefined },
       });
-      ls.allow(room, ls.FULL_ACCESS);
+      ls.allow(room, link.canEdit ? ls.FULL_ACCESS : ls.READ_ACCESS);
       const { status, body } = await ls.authorize();
       return new Response(body, { status });
     }

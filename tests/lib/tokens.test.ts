@@ -78,4 +78,18 @@ describe("generateBoardShareToken", () => {
     const { data } = prismaMock.boardShareLink.create.mock.calls[0][0];
     expect(new Date(data.expiresAt as Date).getTime()).toBe(NOW.getTime() + 48 * HOUR);
   });
+
+  it("defaults canEdit to true when not specified", async () => {
+    await generateBoardShareToken({ boardId: "b1" });
+
+    const { data } = prismaMock.boardShareLink.create.mock.calls[0][0];
+    expect(data.canEdit).toBe(true);
+  });
+
+  it("stores canEdit: false for a read-only link", async () => {
+    await generateBoardShareToken({ boardId: "b1", canEdit: false });
+
+    const { data } = prismaMock.boardShareLink.create.mock.calls[0][0];
+    expect(data.canEdit).toBe(false);
+  });
 });

@@ -8,17 +8,18 @@ import { useSelectionBounds } from "@/hooks/use-selection-bounds";
 
 interface SelectionBoxProps {
   onResizeHandlePointerDown: (corner: Side, initialBounds: XYWH) => void;
+  readOnly?: boolean;
 }
 
 const HANDLE_WIDTH = 8;
 
-export const SelectionBox = memo(({ onResizeHandlePointerDown }: SelectionBoxProps) => {
+export const SelectionBox = memo(({ onResizeHandlePointerDown, readOnly }: SelectionBoxProps) => {
   const soleLayerId = useSelf((me) =>
     me.presence.selection.length === 1 ? me.presence.selection[0] : null,
   );
 
   const isShowingHandles = useStorage(
-    (root) => soleLayerId && root.layers[soleLayerId]?.type !== LayerType.Path,
+    (root) => !readOnly && soleLayerId && root.layers[soleLayerId]?.type !== LayerType.Path,
   );
 
   const bounds = useSelectionBounds();

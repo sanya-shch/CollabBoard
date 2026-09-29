@@ -39,6 +39,7 @@ export const InviteMemberSchema = z.object({
 export const CreateBoardShareLinkSchema = z.object({
   boardId: z.string(),
   expiresInDays: z.number().int().positive().optional(), // undefined = without expiration date
+  canEdit: z.boolean().optional(), // undefined = editable (matches the existing default)
 });
 
 export const CreateBoardSchema = z.object({

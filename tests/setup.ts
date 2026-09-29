@@ -9,6 +9,8 @@ import {
 } from "./mocks/mail";
 
 process.env.AUTH_SECRET = process.env.AUTH_SECRET ?? "test-secret-not-for-production";
+process.env.LIVEBLOCKS_SECRET_KEY =
+  process.env.LIVEBLOCKS_SECRET_KEY ?? "test-liveblocks-secret-not-for-production";
 
 vi.mock("@/lib/db", () => ({ db: prismaMock }));
 
