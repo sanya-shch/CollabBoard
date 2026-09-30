@@ -74,3 +74,14 @@ function distribute(layers: LayerBounds, axis: "x" | "y", size: "width" | "heigh
 
 export const distributeHorizontally = (layers: LayerBounds) => distribute(layers, "x", "width");
 export const distributeVertically = (layers: LayerBounds) => distribute(layers, "y", "height");
+
+// Moves every selected layer by the same (dx, dy) - used for the arrow-key nudge
+// shortcut. Unlike the align/distribute functions above, this never depends on the
+// other layers' bounds, so every layer always gets a patch (nothing to dedupe).
+export function nudge(layers: LayerBounds, dx: number, dy: number): PositionPatch {
+  const patch: PositionPatch = {};
+  for (const [id, b] of Object.entries(layers)) {
+    patch[id] = { x: b.x + dx, y: b.y + dy };
+  }
+  return patch;
+}

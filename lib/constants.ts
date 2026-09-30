@@ -9,3 +9,7 @@ export const sessionCookieOptions = {
   path: "/",
   maxAge: SESSION_COOKIE_MAX_AGE,
 };
+
+// Hard cap on layers per board (keyboard shortcuts, insertion and duplication all
+// respect this, mirroring the existing cap on click-to-insert).
+export const MAX_LAYERS = 100;

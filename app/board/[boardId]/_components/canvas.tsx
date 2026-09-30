@@ -21,7 +21,10 @@ import {
   colorToCss,
   penPointsToPathLayer,
   liveLayersToMap,
+  isTypingTarget,
 } from "@/lib/utils";
+import { nudge, type LayerBounds } from "@/lib/alignment";
+import { MAX_LAYERS } from "@/lib/constants";
 import {
   Camera,
   CanvasMode,
@@ -34,6 +37,7 @@ import {
 } from "@/types/canvas";
 import { useDisableScrollBounce } from "@/hooks/use-disable-scroll-bounce";
 import { useDeleteLayers } from "@/hooks/use-delete-layers";
+import { useDuplicateLayers } from "@/hooks/use-duplicate-layers";
 
 import { Info } from "./info";
 import { Toolbar } from "./toolbar";
@@ -43,8 +47,6 @@ import { LayerPreview } from "./layer-preview";
 import { SelectionBox } from "./selection-box";
 import { SelectionTools } from "./selection-tools";
 import { Path } from "./path";
-
-const MAX_LAYERS = 100;
 
 interface CanvasProps {
   board: {
@@ -392,29 +394,143 @@ export const Canvas = ({ board }: CanvasProps) => {
   }, [selections]);
 
   const deleteLayers = useDeleteLayers();
+  const duplicateLayers = useDuplicateLayers();
+
+  const nudgeSelectedLayers = useMutation(({ storage, self }, dx: number, dy: number) => {
+    if (!self.canWrite || self.presence.selection.length === 0) return;
+
+    const liveLayers = storage.get("layers");
+    const bounds: LayerBounds = {};
+    for (const id of self.presence.selection) {
+      const layer = liveLayers.get(id);
+      if (!layer) continue;
+      bounds[id] = {
+        x: layer.get("x"),
+        y: layer.get("y"),
+        width: layer.get("width"),
+        height: layer.get("height"),
+      };
+    }
+
+    const patch = nudge(bounds, dx, dy);
+    for (const [id, delta] of Object.entries(patch)) {
+      liveLayers.get(id)?.update(delta);
+    }
+  }, []);
 
   useEffect(() => {
+    // Arrow-key repeats fire one keydown per tick while held; pausing history on the
+    // first (non-repeat) press and resuming on keyup coalesces the whole hold into a
+    // single undo step, the same way a mouse-drag nudge would.
+    let isNudging = false;
+
     function onKeyDown(e: KeyboardEvent) {
-      switch (e.key) {
-        case "z": {
-          if (e.ctrlKey || e.metaKey) {
-            if (e.shiftKey) {
-              history.redo();
-            } else {
-              history.undo();
-            }
-            break;
-          }
+      if (isTypingTarget(e.target)) return;
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+        if (e.shiftKey) {
+          history.redo();
+        } else {
+          history.undo();
         }
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "d") {
+        e.preventDefault(); // browser default is "bookmark this page"
+        if (!readOnly) duplicateLayers();
+        return;
+      }
+
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      switch (e.key) {
+        case "Delete":
+        case "Backspace":
+          if (!readOnly) deleteLayers();
+          break;
+        case "Escape":
+          setCanvasState({ mode: CanvasMode.None });
+          unselectLayers();
+          break;
+        case "ArrowLeft":
+        case "ArrowRight":
+        case "ArrowUp":
+        case "ArrowDown": {
+          if (readOnly) break;
+          e.preventDefault(); // don't scroll the page
+          if (!isNudging) {
+            history.pause();
+            isNudging = true;
+          }
+          const step = e.shiftKey ? 10 : 1;
+          const deltas: Record<string, [number, number]> = {
+            ArrowLeft: [-step, 0],
+            ArrowRight: [step, 0],
+            ArrowUp: [0, -step],
+            ArrowDown: [0, step],
+          };
+          const [dx, dy] = deltas[e.key];
+          nudgeSelectedLayers(dx, dy);
+          break;
+        }
+        case "v":
+        case "V":
+          setCanvasState({ mode: CanvasMode.None });
+          break;
+        case "r":
+        case "R":
+          if (!readOnly)
+            setCanvasState({ mode: CanvasMode.Inserting, layerType: LayerType.Rectangle });
+          break;
+        case "o":
+        case "O":
+          if (!readOnly)
+            setCanvasState({ mode: CanvasMode.Inserting, layerType: LayerType.Ellipse });
+          break;
+        case "d":
+        case "D":
+          if (!readOnly)
+            setCanvasState({ mode: CanvasMode.Inserting, layerType: LayerType.Diamond });
+          break;
+        case "t":
+        case "T":
+          if (!readOnly) setCanvasState({ mode: CanvasMode.Inserting, layerType: LayerType.Text });
+          break;
+        case "n":
+        case "N":
+          if (!readOnly) setCanvasState({ mode: CanvasMode.Inserting, layerType: LayerType.Note });
+          break;
+        case "p":
+        case "P":
+          if (!readOnly) setCanvasState({ mode: CanvasMode.Pencil });
+          break;
+      }
+    }
+
+    function onKeyUp(e: KeyboardEvent) {
+      if (isNudging && e.key.startsWith("Arrow")) {
+        history.resume();
+        isNudging = false;
       }
     }
 
     document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("keyup", onKeyUp);
 
     return () => {
       document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("keyup", onKeyUp);
     };
-  }, [deleteLayers, history]);
+  }, [
+    deleteLayers,
+    duplicateLayers,
+    nudgeSelectedLayers,
+    history,
+    readOnly,
+    setCanvasState,
+    unselectLayers,
+  ]);
 
   return (
     <main className="h-full w-full relative bg-neutral-100 touch-none">

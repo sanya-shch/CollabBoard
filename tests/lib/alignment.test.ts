@@ -8,6 +8,7 @@ import {
   alignMiddleVertical,
   distributeHorizontally,
   distributeVertically,
+  nudge,
   type LayerBounds,
 } from "@/lib/alignment";
 
@@ -120,5 +121,27 @@ describe("distributeVertically", () => {
     expect(patch.b).toEqual({ y: 50 });
     expect(patch.a).toBeUndefined();
     expect(patch.c).toBeUndefined();
+  });
+});
+
+describe("nudge", () => {
+  it("moves every layer by the same delta", () => {
+    const layers: LayerBounds = {
+      a: { x: 0, y: 0, width: 10, height: 10 },
+      b: { x: 50, y: 20, width: 5, height: 5 },
+    };
+    expect(nudge(layers, 5, -3)).toEqual({
+      a: { x: 5, y: -3 },
+      b: { x: 55, y: 17 },
+    });
+  });
+
+  it("returns a zero-delta patch (still a valid, applyable patch) for dx=dy=0", () => {
+    const layers: LayerBounds = { a: { x: 1, y: 2, width: 10, height: 10 } };
+    expect(nudge(layers, 0, 0)).toEqual({ a: { x: 1, y: 2 } });
+  });
+
+  it("is a no-op object for an empty selection", () => {
+    expect(nudge({}, 5, 5)).toEqual({});
   });
 });
