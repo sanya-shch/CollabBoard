@@ -131,6 +131,7 @@ export type CanvasState =
   | {
       mode: CanvasMode.Resizing;
       initialBounds: XYWH;
+      initialLayerBounds: Record<string, XYWH>;
       corner: Side;
     };
 

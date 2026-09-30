@@ -25,6 +25,7 @@ import {
   zoomAroundPoint,
 } from "@/lib/utils";
 import { nudge, type LayerBounds } from "@/lib/alignment";
+import { resizeGroup } from "@/lib/resize-group";
 import { MAX_LAYERS } from "@/lib/constants";
 import {
   Camera,
@@ -245,24 +246,52 @@ export const Canvas = ({ board }: CanvasProps) => {
         return;
       }
 
-      const bounds = resizeBounds(canvasState.initialBounds, canvasState.corner, point, lockAspect);
+      const newGroupBounds = resizeBounds(
+        canvasState.initialBounds,
+        canvasState.corner,
+        point,
+        lockAspect,
+      );
+
+      const patch = resizeGroup(
+        canvasState.initialBounds,
+        canvasState.initialLayerBounds,
+        newGroupBounds,
+      );
 
       const liveLayers = storage.get("layers");
-      const layer = liveLayers.get(self.presence.selection[0]);
-
-      if (layer) {
-        layer.update(bounds);
+      for (const [id, bounds] of Object.entries(patch)) {
+        liveLayers.get(id)?.update(bounds);
       }
     },
     [canvasState],
   );
 
-  const onResizeHandlePointerDown = useCallback(
-    (corner: Side, initialBounds: XYWH) => {
+  const onResizeHandlePointerDown = useMutation(
+    ({ storage, self }, corner: Side, initialBounds: XYWH) => {
+      if (!self.canWrite) return;
+
+      // Capture every selected layer's bounds once, at the start of the drag - the
+      // whole resize scales from these fixed originals, not from intermediate,
+      // already-scaled bounds (which would drift/compound frame to frame).
+      const liveLayers = storage.get("layers");
+      const initialLayerBounds: Record<string, XYWH> = {};
+      for (const id of self.presence.selection) {
+        const layer = liveLayers.get(id);
+        if (!layer) continue;
+        initialLayerBounds[id] = {
+          x: layer.get("x"),
+          y: layer.get("y"),
+          width: layer.get("width"),
+          height: layer.get("height"),
+        };
+      }
+
       history.pause();
       setCanvasState({
         mode: CanvasMode.Resizing,
         initialBounds,
+        initialLayerBounds,
         corner,
       });
     },
