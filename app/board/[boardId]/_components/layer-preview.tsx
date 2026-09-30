@@ -9,6 +9,7 @@ import { colorToCss } from "@/lib/utils";
 import { Rectangle } from "./rectangle";
 import { Ellipse } from "./ellipse";
 import { Diamond } from "./diamond";
+import { Line } from "./line";
 import { Text } from "./text";
 import { Note } from "./note";
 import { Path } from "./path";
@@ -49,6 +50,15 @@ export const LayerPreview = memo(
       case LayerType.Diamond:
         return (
           <Diamond
+            id={id}
+            layer={layer}
+            onPointerDown={onLayerPointerDown}
+            selectionColor={selectionColor}
+          />
+        );
+      case LayerType.Line:
+        return (
+          <Line
             id={id}
             layer={layer}
             onPointerDown={onLayerPointerDown}

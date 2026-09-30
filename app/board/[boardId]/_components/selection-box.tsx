@@ -3,11 +3,13 @@
 import { memo } from "react";
 
 import { LayerType, Side, XYWH } from "@/types/canvas";
-import { useSelf, useStorage } from "@liveblocks/react";
+import { useSelf, useStorage, shallow } from "@liveblocks/react";
 import { useSelectionBounds } from "@/hooks/use-selection-bounds";
+import { getLineEndpoints } from "@/lib/line";
 
 interface SelectionBoxProps {
   onResizeHandlePointerDown: (corner: Side, initialBounds: XYWH) => void;
+  onLineEndpointPointerDown: (layerId: string, which: "start" | "end") => void;
   readOnly?: boolean;
   zoom: number;
 }
@@ -16,7 +18,7 @@ interface SelectionBoxProps {
 const HANDLE_SCREEN_SIZE = 8;
 
 export const SelectionBox = memo(
-  ({ onResizeHandlePointerDown, readOnly, zoom }: SelectionBoxProps) => {
+  ({ onResizeHandlePointerDown, onLineEndpointPointerDown, readOnly, zoom }: SelectionBoxProps) => {
     const soleLayerId = useSelf((me) =>
       me.presence.selection.length === 1 ? me.presence.selection[0] : null,
     );
@@ -29,10 +31,48 @@ export const SelectionBox = memo(
       (root) => !readOnly && soleLayerId && root.layers[soleLayerId]?.type !== LayerType.Path,
     );
 
+    // A Line gets its own 2 endpoint handles instead of the generic 8-handle box:
+    // dragging a corner/edge handle on a 2-point line would move both endpoints at
+    // once in ways that don't match where the user is actually dragging (see the
+    // ResizingLine comment in types/canvas.ts).
+    const soleLine = useStorage((root) => {
+      if (!soleLayerId) return null;
+      const layer = root.layers[soleLayerId];
+      return layer?.type === LayerType.Line ? layer : null;
+    }, shallow);
+
     const bounds = useSelectionBounds();
 
     if (!bounds) {
       return null;
+    }
+
+    if (soleLine && !readOnly) {
+      const { start, end } = getLineEndpoints(soleLine);
+      const handleRadius = HANDLE_WIDTH / 2;
+
+      return (
+        <>
+          {[
+            { point: start, which: "start" as const },
+            { point: end, which: "end" as const },
+          ].map(({ point, which }) => (
+            <circle
+              key={which}
+              className="fill-white stroke-1 stroke-blue-500"
+              vectorEffect="non-scaling-stroke"
+              cx={point.x}
+              cy={point.y}
+              r={handleRadius}
+              style={{ cursor: "pointer" }}
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                onLineEndpointPointerDown(soleLayerId!, which);
+              }}
+            />
+          ))}
+        </>
+      );
     }
 
     return (

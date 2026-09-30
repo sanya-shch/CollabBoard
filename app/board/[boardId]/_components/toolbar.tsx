@@ -1,4 +1,5 @@
 import {
+  ArrowUpRight,
   Circle,
   Diamond as DiamondIcon,
   MousePointer2,
@@ -127,6 +128,21 @@ export const Toolbar = ({
               isActive={
                 canvasState.mode === CanvasMode.Inserting &&
                 canvasState.layerType === LayerType.Diamond
+              }
+            />
+
+            <ToolButton
+              label="Line"
+              icon={ArrowUpRight}
+              onClick={() =>
+                setCanvasState({
+                  mode: CanvasMode.Inserting,
+                  layerType: LayerType.Line,
+                })
+              }
+              isActive={
+                canvasState.mode === CanvasMode.Inserting &&
+                canvasState.layerType === LayerType.Line
               }
             />
 

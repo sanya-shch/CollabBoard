@@ -26,6 +26,7 @@ import {
 } from "@/lib/utils";
 import { nudge, type LayerBounds } from "@/lib/alignment";
 import { resizeGroup } from "@/lib/resize-group";
+import { moveLineEndpoint } from "@/lib/line";
 import { MAX_LAYERS } from "@/lib/constants";
 import {
   Camera,
@@ -90,7 +91,8 @@ export const Canvas = ({ board }: CanvasProps) => {
         | LayerType.Rectangle
         | LayerType.Text
         | LayerType.Note
-        | LayerType.Diamond,
+        | LayerType.Diamond
+        | LayerType.Line,
       position: Point,
     ) => {
       if (!self.canWrite) return;
@@ -102,14 +104,27 @@ export const Canvas = ({ board }: CanvasProps) => {
 
       const liveLayerIds = storage.get("layerIds");
       const layerId = nanoid();
-      const layer = new LiveObject({
-        type: layerType,
-        x: position.x,
-        y: position.y,
-        height: 100,
-        width: 100,
-        fill: lastUsedColor,
-      });
+      const layer = new LiveObject(
+        layerType === LayerType.Line
+          ? {
+              type: layerType,
+              x: position.x,
+              y: position.y,
+              height: 100,
+              width: 100,
+              flipX: false,
+              flipY: false,
+              fill: lastUsedColor,
+            }
+          : {
+              type: layerType,
+              x: position.x,
+              y: position.y,
+              height: 100,
+              width: 100,
+              fill: lastUsedColor,
+            },
+      );
 
       liveLayerIds.push(layerId);
       liveLayers.set(layerId, layer);
@@ -298,6 +313,33 @@ export const Canvas = ({ board }: CanvasProps) => {
     [history],
   );
 
+  const onLineEndpointPointerDown = useCallback(
+    (layerId: string, which: "start" | "end") => {
+      history.pause();
+      setCanvasState({ mode: CanvasMode.ResizingLine, layerId, which });
+    },
+    [history],
+  );
+
+  const resizeLineEndpoint = useMutation(
+    ({ storage, self }, point: Point) => {
+      if (canvasState.mode !== CanvasMode.ResizingLine || !self.canWrite) return;
+
+      const layer = storage.get("layers").get(canvasState.layerId);
+      if (!layer) return;
+
+      // .get() on a LiveObject<Layer> only exposes fields common to every layer type
+      // (keyof of a union is the intersection of its members' keys), so read the
+      // Line-only flipX/flipY via a plain, type-guard-narrowable snapshot instead.
+      const data = layer.toJSON();
+      if (data.type !== LayerType.Line) return;
+
+      const next = moveLineEndpoint(data, canvasState.which, point);
+      layer.update(next);
+    },
+    [canvasState],
+  );
+
   const onWheel = useCallback((e: React.WheelEvent) => {
     // Trackpad pinch-zoom and Ctrl/Cmd+scroll are both reported as wheel events with
     // ctrlKey set (that's how browsers signal pinch gestures on a trackpad too).
@@ -346,6 +388,8 @@ export const Canvas = ({ board }: CanvasProps) => {
         // Hold Shift while dragging a corner handle to keep the shape's aspect ratio
         // (a square stays a square, a circle stays a circle instead of becoming an oval).
         resizeSelectedLayer(current, e.shiftKey);
+      } else if (canvasState.mode === CanvasMode.ResizingLine) {
+        resizeLineEndpoint(current);
       } else if (canvasState.mode === CanvasMode.Pencil) {
         continueDrawing(current, e);
       }
@@ -356,6 +400,7 @@ export const Canvas = ({ board }: CanvasProps) => {
       camera,
       canvasState,
       resizeSelectedLayer,
+      resizeLineEndpoint,
       translateSelectedLayers,
       startMultiSelection,
       updateSelectionNet,
@@ -567,6 +612,10 @@ export const Canvas = ({ board }: CanvasProps) => {
           if (!readOnly)
             setCanvasState({ mode: CanvasMode.Inserting, layerType: LayerType.Diamond });
           break;
+        case "l":
+        case "L":
+          if (!readOnly) setCanvasState({ mode: CanvasMode.Inserting, layerType: LayerType.Line });
+          break;
         case "t":
         case "T":
           if (!readOnly) setCanvasState({ mode: CanvasMode.Inserting, layerType: LayerType.Text });
@@ -653,6 +702,7 @@ export const Canvas = ({ board }: CanvasProps) => {
 
           <SelectionBox
             onResizeHandlePointerDown={onResizeHandlePointerDown}
+            onLineEndpointPointerDown={onLineEndpointPointerDown}
             readOnly={readOnly}
             zoom={camera.zoom}
           />

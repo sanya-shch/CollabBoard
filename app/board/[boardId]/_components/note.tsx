@@ -4,6 +4,7 @@ import ContentEditable, { ContentEditableEvent } from "react-contenteditable";
 import { NoteLayer } from "@/types/canvas";
 import { cn, colorToCss, getContrastingTextColor } from "@/lib/utils";
 import { useMutation } from "@liveblocks/react";
+import { LiveObject } from "@liveblocks/client";
 
 const font = Kalam({
   subsets: ["latin"],
@@ -32,7 +33,10 @@ export const Note = ({ layer, onPointerDown, id, selectionColor }: NoteProps) =>
   const updateValue = useMutation(({ storage }, newValue: string) => {
     const liveLayers = storage.get("layers");
 
-    liveLayers.get(id)?.set("value", newValue);
+    // This component only ever renders for a Note layer, but LiveObject<Layer>.set()
+    // only accepts keys common to every layer type - "value" isn't one since Line
+    // doesn't have it. Cast to the specific layer type this component owns.
+    (liveLayers.get(id) as LiveObject<NoteLayer> | undefined)?.set("value", newValue);
   }, []);
 
   const handleContentChange = (e: ContentEditableEvent) => {

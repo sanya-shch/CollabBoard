@@ -17,6 +17,7 @@ export enum LayerType {
   Text,
   Note,
   Diamond,
+  Line,
 }
 
 export type RectangleLayer = {
@@ -80,6 +81,22 @@ export type DiamondLayer = {
   value?: string;
 };
 
+// x/y/width/height are always a normalized, non-negative bounding box (same
+// convention as every other layer) so translate/duplicate/nudge/align/group-resize
+// all work on a Line with no special-casing. flipX/flipY separately record which
+// corner of that box is the line's start vs. end, so the line can point in any of
+// the 4 diagonal directions (not just top-left-to-bottom-right).
+export type LineLayer = {
+  type: LayerType.Line;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  flipX: boolean;
+  flipY: boolean;
+  fill: Color;
+};
+
 export type Point = {
   x: number;
   y: number;
@@ -119,7 +136,8 @@ export type CanvasState =
         | LayerType.Rectangle
         | LayerType.Text
         | LayerType.Note
-        | LayerType.Diamond;
+        | LayerType.Diamond
+        | LayerType.Line;
     }
   | {
       mode: CanvasMode.Pencil;
@@ -133,6 +151,15 @@ export type CanvasState =
       initialBounds: XYWH;
       initialLayerBounds: Record<string, XYWH>;
       corner: Side;
+    }
+  | {
+      // A single selected Line's own endpoint handle, as opposed to the generic
+      // 8-handle box resize above - dragging a corner/edge handle on a 2-point line
+      // moves BOTH endpoints in confusing ways, so a line gets exactly 2 handles
+      // (one per endpoint) driven by this mode instead.
+      mode: CanvasMode.ResizingLine;
+      layerId: string;
+      which: "start" | "end";
     };
 
 export enum CanvasMode {
@@ -143,6 +170,7 @@ export enum CanvasMode {
   Inserting,
   Resizing,
   Pencil,
+  ResizingLine,
 }
 
 export type Layer =
@@ -151,4 +179,5 @@ export type Layer =
   | PathLayer
   | TextLayer
   | NoteLayer
-  | DiamondLayer;
+  | DiamondLayer
+  | LineLayer;
