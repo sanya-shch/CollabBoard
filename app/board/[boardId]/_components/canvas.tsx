@@ -22,6 +22,7 @@ import {
   penPointsToPathLayer,
   liveLayersToMap,
   isTypingTarget,
+  zoomAroundPoint,
 } from "@/lib/utils";
 import { nudge, type LayerBounds } from "@/lib/alignment";
 import { MAX_LAYERS } from "@/lib/constants";
@@ -46,6 +47,7 @@ import { CursorsPresence } from "./cursors-presence";
 import { LayerPreview } from "./layer-preview";
 import { SelectionBox } from "./selection-box";
 import { SelectionTools } from "./selection-tools";
+import { ZoomControls } from "./zoom-controls";
 import { Path } from "./path";
 
 interface CanvasProps {
@@ -59,7 +61,7 @@ export const Canvas = ({ board }: CanvasProps) => {
   const [canvasState, setCanvasState] = useState<CanvasState>({
     mode: CanvasMode.None,
   });
-  const [camera, setCamera] = useState<Camera>({ x: 0, y: 0 });
+  const [camera, setCamera] = useState<Camera>({ x: 0, y: 0, zoom: 1 });
   const [lastUsedColor, setLastUsedColor] = useState<Color>({
     r: 0,
     g: 0,
@@ -268,11 +270,36 @@ export const Canvas = ({ board }: CanvasProps) => {
   );
 
   const onWheel = useCallback((e: React.WheelEvent) => {
+    // Trackpad pinch-zoom and Ctrl/Cmd+scroll are both reported as wheel events with
+    // ctrlKey set (that's how browsers signal pinch gestures on a trackpad too).
+    // Plain two-finger scroll (no ctrlKey) pans instead.
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      // deltaY is negative when scrolling/pinching "up" (zoom in). exp() gives a
+      // smooth, multiplicative zoom curve that feels the same at any zoom level.
+      const zoomFactor = Math.exp(-e.deltaY * 0.01);
+      setCamera((camera) => zoomAroundPoint(camera, { x: e.clientX, y: e.clientY }, zoomFactor));
+      return;
+    }
+
     setCamera((camera) => ({
+      ...camera,
       x: camera.x - e.deltaX,
       y: camera.y - e.deltaY,
     }));
   }, []);
+
+  // Zoom-in/out buttons and keyboard shortcuts have no cursor position to anchor to,
+  // so they zoom around the viewport's center instead.
+  const zoomByButtonOrShortcut = useCallback((zoomFactor: number) => {
+    setCamera((camera) =>
+      zoomAroundPoint(camera, { x: window.innerWidth / 2, y: window.innerHeight / 2 }, zoomFactor),
+    );
+  }, []);
+
+  const zoomIn = useCallback(() => zoomByButtonOrShortcut(1.2), [zoomByButtonOrShortcut]);
+  const zoomOut = useCallback(() => zoomByButtonOrShortcut(1 / 1.2), [zoomByButtonOrShortcut]);
+  const resetZoom = useCallback(() => setCamera((camera) => ({ ...camera, zoom: 1 })), []);
 
   const onPointerMove = useMutation(
     ({ setMyPresence }, e: React.PointerEvent) => {
@@ -442,6 +469,24 @@ export const Canvas = ({ board }: CanvasProps) => {
         return;
       }
 
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === "=" || e.key === "+") {
+          e.preventDefault(); // browser default is "zoom the whole page"
+          zoomIn();
+          return;
+        }
+        if (e.key === "-") {
+          e.preventDefault();
+          zoomOut();
+          return;
+        }
+        if (e.key === "0") {
+          e.preventDefault();
+          resetZoom();
+          return;
+        }
+      }
+
       if (e.ctrlKey || e.metaKey || e.altKey) return;
 
       switch (e.key) {
@@ -526,6 +571,9 @@ export const Canvas = ({ board }: CanvasProps) => {
     deleteLayers,
     duplicateLayers,
     nudgeSelectedLayers,
+    zoomIn,
+    zoomOut,
+    resetZoom,
     history,
     readOnly,
     setCanvasState,
@@ -550,6 +598,8 @@ export const Canvas = ({ board }: CanvasProps) => {
 
       {!readOnly && <SelectionTools camera={camera} setLastUsedColor={setLastUsedColor} />}
 
+      <ZoomControls zoom={camera.zoom} onZoomIn={zoomIn} onZoomOut={zoomOut} onReset={resetZoom} />
+
       <svg
         className="h-[100vh] w-[100vw]"
         onWheel={onWheel}
@@ -560,7 +610,7 @@ export const Canvas = ({ board }: CanvasProps) => {
       >
         <g
           style={{
-            transform: `translate(${camera.x}px, ${camera.y}px)`,
+            transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.zoom})`,
           }}
         >
           {layerIds?.map((layerId) => (
@@ -572,7 +622,11 @@ export const Canvas = ({ board }: CanvasProps) => {
             />
           ))}
 
-          <SelectionBox onResizeHandlePointerDown={onResizeHandlePointerDown} readOnly={readOnly} />
+          <SelectionBox
+            onResizeHandlePointerDown={onResizeHandlePointerDown}
+            readOnly={readOnly}
+            zoom={camera.zoom}
+          />
 
           {canvasState.mode === CanvasMode.SelectionNet && canvasState.current != null && (
             <rect
