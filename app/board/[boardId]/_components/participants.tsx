@@ -1,20 +1,21 @@
 "use client";
 
 import { connectionIdToColor } from "@/lib/utils";
-import { useOthers, useSelf } from "@liveblocks/react";
+import { useOthers, useSelf, useStatus } from "@liveblocks/react";
 
 import { UserAvatar } from "./user-avatar";
 
 const MAX_SHOWN_USERS = 2;
 
 export const Participants = () => {
+  const status = useStatus();
   const users = useOthers();
   const currentUser = useSelf();
   const hasMoreUsers = users.length > MAX_SHOWN_USERS;
 
   return (
     <div className="absolute h-12 top-2 right-2 bg-white rounded-md p-3 flex items-center shadow-md">
-      <div className="flex gap-x-2">
+      <div className="flex gap-x-2" data-testid="liveblocks-status" data-status={status}>
         {users.slice(0, MAX_SHOWN_USERS).map(({ connectionId, info }) => {
           return (
             <UserAvatar

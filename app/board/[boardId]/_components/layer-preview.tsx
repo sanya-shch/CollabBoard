@@ -28,77 +28,87 @@ export const LayerPreview = memo(
       return null;
     }
 
-    switch (layer.type) {
-      case LayerType.Rectangle:
-        return (
-          <Rectangle
-            id={id}
-            layer={layer}
-            onPointerDown={onLayerPointerDown}
-            selectionColor={selectionColor}
-          />
-        );
-      case LayerType.Ellipse:
-        return (
-          <Ellipse
-            id={id}
-            layer={layer}
-            onPointerDown={onLayerPointerDown}
-            selectionColor={selectionColor}
-          />
-        );
-      case LayerType.Diamond:
-        return (
-          <Diamond
-            id={id}
-            layer={layer}
-            onPointerDown={onLayerPointerDown}
-            selectionColor={selectionColor}
-          />
-        );
-      case LayerType.Line:
-        return (
-          <Line
-            id={id}
-            layer={layer}
-            onPointerDown={onLayerPointerDown}
-            selectionColor={selectionColor}
-          />
-        );
-      case LayerType.Note:
-        return (
-          <Note
-            id={id}
-            layer={layer}
-            onPointerDown={onLayerPointerDown}
-            selectionColor={selectionColor}
-          />
-        );
-      case LayerType.Text:
-        return (
-          <Text
-            id={id}
-            layer={layer}
-            onPointerDown={onLayerPointerDown}
-            selectionColor={selectionColor}
-          />
-        );
-      case LayerType.Path:
-        return (
-          <Path
-            key={id}
-            points={layer.points}
-            onPointerDown={(e) => onLayerPointerDown(e, id)}
-            x={layer.x}
-            y={layer.y}
-            fill={layer.fill ? colorToCss(layer.fill) : "#000"}
-            stroke={selectionColor}
-          />
-        );
-      default:
-        console.warn("Unknown layer type");
-        return null;
-    }
+    const content = (() => {
+      switch (layer.type) {
+        case LayerType.Rectangle:
+          return (
+            <Rectangle
+              id={id}
+              layer={layer}
+              onPointerDown={onLayerPointerDown}
+              selectionColor={selectionColor}
+            />
+          );
+        case LayerType.Ellipse:
+          return (
+            <Ellipse
+              id={id}
+              layer={layer}
+              onPointerDown={onLayerPointerDown}
+              selectionColor={selectionColor}
+            />
+          );
+        case LayerType.Diamond:
+          return (
+            <Diamond
+              id={id}
+              layer={layer}
+              onPointerDown={onLayerPointerDown}
+              selectionColor={selectionColor}
+            />
+          );
+        case LayerType.Line:
+          return (
+            <Line
+              id={id}
+              layer={layer}
+              onPointerDown={onLayerPointerDown}
+              selectionColor={selectionColor}
+            />
+          );
+        case LayerType.Note:
+          return (
+            <Note
+              id={id}
+              layer={layer}
+              onPointerDown={onLayerPointerDown}
+              selectionColor={selectionColor}
+            />
+          );
+        case LayerType.Text:
+          return (
+            <Text
+              id={id}
+              layer={layer}
+              onPointerDown={onLayerPointerDown}
+              selectionColor={selectionColor}
+            />
+          );
+        case LayerType.Path:
+          return (
+            <Path
+              key={id}
+              points={layer.points}
+              onPointerDown={(e) => onLayerPointerDown(e, id)}
+              x={layer.x}
+              y={layer.y}
+              fill={layer.fill ? colorToCss(layer.fill) : "#000"}
+              stroke={selectionColor}
+            />
+          );
+        default:
+          console.warn("Unknown layer type");
+          return null;
+      }
+    })();
+
+    // A stable test hook for E2E (which layer, of which type, is on screen) that
+    // doesn't depend on any shape's internal markup.
+    return (
+      <g data-testid={`layer-${id}`} data-layer-type={LayerType[layer.type]}>
+        {content}
+      </g>
+    );
   },
 );
 

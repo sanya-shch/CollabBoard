@@ -23,6 +23,7 @@ export const ToolButton = ({
   return (
     <Hint label={label} side="right" sideOffset={14}>
       <Button
+        data-testid={`tool-${label.toLowerCase().replace(/\s+/g, "-")}`}
         disabled={isDisabled}
         onClick={onClick}
         size="icon"

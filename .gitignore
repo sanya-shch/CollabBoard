@@ -43,3 +43,8 @@ next-env.d.ts
 
 /generated
 /prisma/migrations
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/

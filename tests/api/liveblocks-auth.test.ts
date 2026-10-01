@@ -53,6 +53,27 @@ describe("POST /api/liveblocks-auth", () => {
     expect(prepareSessionMock).not.toHaveBeenCalled();
   });
 
+  it("returns a JSON 500 (not an HTML error page) when the Liveblocks SDK throws", async () => {
+    const logSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    prismaMock.board.findUnique.mockResolvedValue({
+      id: "board_1",
+      organizationId: "org_1",
+    } as never);
+    currentUserMock.mockResolvedValue({ id: "u1", name: "Ann", image: null } as never);
+    prismaMock.membership.findUnique.mockResolvedValue({ role: "MEMBER" } as never);
+    authorizeMock.mockRejectedValueOnce(new Error("invalid secret key"));
+
+    const res = await POST(request());
+
+    expect(res.status).toBe(500);
+    expect(res.headers.get("content-type")).toContain("application/json");
+    const body = await res.json();
+    expect(body).toEqual({ error: "Something went wrong" });
+    expect(logSpy).toHaveBeenCalledWith("[liveblocks-auth]", expect.any(Error));
+
+    logSpy.mockRestore();
+  });
+
   it("grants FULL_ACCESS to a signed-in organization member", async () => {
     prismaMock.board.findUnique.mockResolvedValue({
       id: "board_1",

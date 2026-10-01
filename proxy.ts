@@ -6,7 +6,9 @@ import { apiAuthPrefix, authRoutes, DEFAULT_LOGIN_REDIRECT, isPublicPath } from 
 export async function proxy(request: NextRequest) {
   const { nextUrl } = request;
 
-  const isApiAuthRoute = nextUrl.pathname.startsWith(apiAuthPrefix);
+  const isApiAuthRoute =
+    nextUrl.pathname.startsWith(apiAuthPrefix) || nextUrl.pathname === "/api/liveblocks-auth";
+
   const isPublicRoute = isPublicPath(nextUrl.pathname);
   const isAuthRoute = authRoutes.includes(nextUrl.pathname);
 

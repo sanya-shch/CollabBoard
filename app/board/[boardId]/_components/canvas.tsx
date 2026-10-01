@@ -679,6 +679,7 @@ export const Canvas = ({ board }: CanvasProps) => {
       <ZoomControls zoom={camera.zoom} onZoomIn={zoomIn} onZoomOut={zoomOut} onReset={resetZoom} />
 
       <svg
+        data-testid="canvas-svg"
         className="h-[100vh] w-[100vw]"
         onWheel={onWheel}
         onPointerMove={onPointerMove}
